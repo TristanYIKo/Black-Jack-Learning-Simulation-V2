@@ -33,8 +33,8 @@ const PlayerArea: React.FC<PlayerAreaProps> = ({ hands, activeHandIndex }) => {
                     <div
                         key={index}
                         className={`relative p-4 rounded-xl transition-all duration-300 ${index === activeHandIndex && hand.isActive
-                                ? 'bg-yellow-500/20 border-2 border-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.3)]'
-                                : 'bg-black/20 border-2 border-transparent'
+                            ? 'bg-yellow-500/20 border-2 border-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.3)]'
+                            : 'bg-black/20 border-2 border-transparent'
                             }`}
                     >
                         {/* Hand Status Overlay */}
