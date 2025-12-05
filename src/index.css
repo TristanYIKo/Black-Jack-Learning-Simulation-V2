@@ -30,3 +30,35 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: #4f7f4f;
 }
+
+@keyframes bounce-short {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.animate-bounce-short {
+    animation: bounce-short 0.3s ease-in-out;
+}
+
+@keyframes ping-once {
+    0% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+.animate-ping-once {
+    animation: ping-once 0.5s cubic-bezier(0, 0, 0.2, 1) forwards;
+}

@@ -52,6 +52,9 @@ export type GameAction =
     | { type: 'CLEAR_BET' }
     | { type: 'DEAL' }
     | { type: 'PLAYER_ACTION'; action: ActionType }
-    | { type: 'RESOLVE_DEALER' } // Triggered after player stands/busts
+    | { type: 'RESOLVE_DEALER' } // Triggered to start dealer turn
+    | { type: 'REVEAL_HIDDEN' }
+    | { type: 'DEALER_HIT' }
+    | { type: 'DEALER_STAND' }
     | { type: 'NEXT_HAND' } // For split hands
     | { type: 'NEW_ROUND' }; // Back to betting

@@ -7,19 +7,43 @@ import ActionButtons from './ActionButtons';
 import TrainerPanel from './TrainerPanel';
 import RoundSummaryModal from './RoundSummaryModal';
 import LobbyScreen from './LobbyScreen';
+import { calculateHandValue } from '../utils/hand';
 
 const BlackjackTable: React.FC = () => {
     const [state, dispatch] = useReducer(gameReducer, createInitialState());
 
-    // Effect to handle Dealer Turn automatically
+    // Effect to handle Dealer Turn with delays
     useEffect(() => {
         if (state.phase === 'DEALER_TURN') {
-            const timer = setTimeout(() => {
-                dispatch({ type: 'RESOLVE_DEALER' });
-            }, 1000); // Small delay for visual pacing
+            const dealerHand = state.dealerHand;
+            const hasHidden = dealerHand.cards.some(c => c.isHidden);
+
+            let timer: NodeJS.Timeout;
+
+            if (hasHidden) {
+                // Step 1: Reveal Hidden Card
+                timer = setTimeout(() => {
+                    dispatch({ type: 'REVEAL_HIDDEN' });
+                }, 1000);
+            } else {
+                // Step 2: Hit or Stand
+                const { total, isSoft } = calculateHandValue(dealerHand);
+                // Dealer hits on soft 17
+                const shouldHit = total < 17 || (total === 17 && isSoft);
+
+                if (shouldHit) {
+                    timer = setTimeout(() => {
+                        dispatch({ type: 'DEALER_HIT' });
+                    }, 1500); // Slower speed
+                } else if (!dealerHand.isStand) {
+                    timer = setTimeout(() => {
+                        dispatch({ type: 'DEALER_STAND' });
+                    }, 1000);
+                }
+            }
             return () => clearTimeout(timer);
         }
-    }, [state.phase]);
+    }, [state.phase, state.dealerHand]);
 
     if (state.phase === 'LOBBY') {
         return (
@@ -47,9 +71,16 @@ const BlackjackTable: React.FC = () => {
             {/* Header / Stats */}
             <div className="z-10 w-full max-w-6xl flex justify-between items-start px-4 mb-4">
                 <div className="text-white/50 font-bold text-xl tracking-widest">BLACKJACK TRAINER</div>
-                <div className="flex flex-col items-end">
+                <div className="flex flex-col items-end space-y-2">
                     <div className="text-white font-mono text-xl">Bankroll: <span className={state.balance < 20 ? 'text-red-400' : 'text-green-400'}>${state.balance}</span></div>
-                    <button onClick={() => dispatch({ type: 'NEW_ROUND' })} className="text-xs text-gray-400 hover:text-white underline mt-1">Back to Lobby</button>
+                    <div className="flex space-x-4">
+                        <button onClick={() => dispatch({ type: 'NEW_ROUND' })} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm font-bold transition-colors">
+                            Restart Game
+                        </button>
+                        <button onClick={() => dispatch({ type: 'START_GAME' })} className="px-8 py-3 bg-red-800 hover:bg-red-700 text-white rounded-lg text-lg font-bold transition-colors shadow-md">
+                            Back to Lobby
+                        </button>
+                    </div>
                 </div>
             </div>
 

@@ -206,22 +206,45 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         }
 
         case 'RESOLVE_DEALER': {
-            // Reveal hidden card
+            // Just start the dealer phase, actual actions happen via effects
+            return {
+                ...state,
+                phase: 'DEALER_TURN',
+            };
+        }
+
+        case 'REVEAL_HIDDEN': {
             let dealerHand = { ...state.dealerHand };
             dealerHand.cards = dealerHand.cards.map(c => ({ ...c, isHidden: false }));
+            return {
+                ...state,
+                dealerHand,
+            };
+        }
 
+        case 'DEALER_HIT': {
             let shoe = [...state.shoe];
-            let { total } = calculateHandValue(dealerHand);
+            let dealerHand = { ...state.dealerHand };
+            const card = shoe.pop()!;
+            dealerHand.cards = [...dealerHand.cards, card];
 
-            // Dealer hits on soft 17
-            while (total < 17 || (total === 17 && calculateHandValue(dealerHand).isSoft)) {
-                const card = shoe.pop()!;
-                dealerHand.cards = [...dealerHand.cards, card];
-                total = calculateHandValue(dealerHand).total;
+            const { total } = calculateHandValue(dealerHand);
+            if (total > 21) {
+                dealerHand.isBust = true;
             }
 
-            dealerHand.isBust = total > 21;
+            return {
+                ...state,
+                shoe,
+                dealerHand,
+            };
+        }
+
+        case 'DEALER_STAND': {
+            let dealerHand = { ...state.dealerHand };
             dealerHand.isStand = true;
+
+            const { total } = calculateHandValue(dealerHand);
 
             // Calculate Winnings
             let newBalance = state.balance;
@@ -250,7 +273,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
 
             return {
                 ...state,
-                shoe,
                 dealerHand,
                 balance: newBalance,
                 phase: 'RESOLUTION',
