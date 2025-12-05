@@ -18,14 +18,14 @@ export interface Hand {
     isStand: boolean;
 }
 
-export type Phase = 'LOBBY' | 'BETTING' | 'DEALING' | 'PLAYER_TURN' | 'DEALER_TURN' | 'RESOLUTION';
+export type Phase = 'LOBBY' | 'BETTING' | 'DEALING' | 'INSURANCE' | 'PLAYER_TURN' | 'DEALER_TURN' | 'RESOLUTION';
 
 export type ActionType = 'HIT' | 'STAND' | 'DOUBLE' | 'SPLIT';
 
 export interface Feedback {
     correct: boolean;
-    userAction: ActionType;
-    optimalAction: ActionType;
+    userAction: ActionType | 'INSURANCE_TAKE' | 'INSURANCE_DECLINE'; // Extended for insurance
+    optimalAction: ActionType | 'INSURANCE_TAKE' | 'INSURANCE_DECLINE';
 }
 
 export interface Stats {
@@ -40,9 +40,11 @@ export interface GameState {
     dealerHand: Hand;
     balance: number;
     currentBet: number;
+    lastBet: number; // For Rebet & Deal
     phase: Phase;
     lastDecisionFeedback?: Feedback;
     stats: Stats;
+    insuranceBet: number; // Track insurance bet
 }
 
 export type GameAction =
@@ -51,10 +53,15 @@ export type GameAction =
     | { type: 'PLACE_BET'; amount: number }
     | { type: 'CLEAR_BET' }
     | { type: 'DEAL' }
+    | { type: 'REBET_AND_DEAL' }
+    | { type: 'TAKE_INSURANCE' }
+    | { type: 'DECLINE_INSURANCE' }
     | { type: 'PLAYER_ACTION'; action: ActionType }
     | { type: 'RESOLVE_DEALER' } // Triggered to start dealer turn
     | { type: 'REVEAL_HIDDEN' }
     | { type: 'DEALER_HIT' }
     | { type: 'DEALER_STAND' }
     | { type: 'NEXT_HAND' } // For split hands
-    | { type: 'NEW_ROUND' }; // Back to betting
+    | { type: 'NEW_ROUND' } // Back to betting
+    | { type: 'BACK_TO_LOBBY' }
+    | { type: 'RESTART_GAME' };

@@ -10,35 +10,33 @@ interface ActionButtonsProps {
 }
 
 const ActionButtons: React.FC<ActionButtonsProps> = ({ onAction, canHit, canStand, canDouble, canSplit }) => {
-    const btnClass = "px-6 py-3 rounded-lg font-bold text-white shadow-lg transform transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed";
-
     return (
-        <div className="flex space-x-4 mt-8">
+        <div className="flex space-x-4">
             <button
                 onClick={() => onAction('HIT')}
                 disabled={!canHit}
-                className={`${btnClass} bg-green-600 hover:bg-green-500`}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             >
                 HIT
             </button>
             <button
                 onClick={() => onAction('STAND')}
                 disabled={!canStand}
-                className={`${btnClass} bg-red-600 hover:bg-red-500`}
+                className="px-6 py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             >
                 STAND
             </button>
             <button
                 onClick={() => onAction('DOUBLE')}
                 disabled={!canDouble}
-                className={`${btnClass} bg-yellow-600 hover:bg-yellow-500`}
+                className="px-6 py-3 bg-yellow-600 text-white rounded-lg font-bold hover:bg-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             >
                 DOUBLE
             </button>
             <button
                 onClick={() => onAction('SPLIT')}
                 disabled={!canSplit}
-                className={`${btnClass} bg-blue-600 hover:bg-blue-500`}
+                className="px-6 py-3 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             >
                 SPLIT
             </button>

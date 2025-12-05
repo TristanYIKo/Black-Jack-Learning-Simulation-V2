@@ -7,9 +7,11 @@ interface BettingControlsProps {
     onBet: (amount: number) => void;
     onClear: () => void;
     onDeal: () => void;
+    lastBet: number;
+    onRebet: () => void;
 }
 
-const BettingControls: React.FC<BettingControlsProps> = ({ balance, currentBet, onBet, onClear, onDeal }) => {
+const BettingControls: React.FC<BettingControlsProps> = ({ balance, currentBet, onBet, onClear, onDeal, lastBet, onRebet }) => {
     const [animatingChip, setAnimatingChip] = useState<{ value: number; id: number } | null>(null);
 
     const handleBet = (amount: number) => {
@@ -76,6 +78,14 @@ const BettingControls: React.FC<BettingControlsProps> = ({ balance, currentBet, 
                 >
                     DEAL
                 </button>
+                {lastBet > 0 && balance >= lastBet && currentBet === 0 && (
+                    <button
+                        onClick={onRebet}
+                        className="px-6 py-3 bg-blue-600 text-white text-lg font-bold rounded-lg hover:bg-blue-500 shadow-lg transform hover:scale-105 transition-all"
+                    >
+                        Rebet & Deal (${lastBet})
+                    </button>
+                )}
             </div>
         </div>
     );

@@ -1,4 +1,4 @@
-import { GameState, GameAction, Hand } from './types';
+import { GameState, GameAction, Hand, Phase } from './types';
 import { createShoe } from './utils/deck';
 import { calculateHandValue } from './utils/hand';
 import { getBasicStrategyAction } from './utils/basicStrategy';
@@ -13,8 +13,10 @@ const createInitialState = (): GameState => ({
     dealerHand: { cards: [], bet: 0, isActive: false, isBust: false, isBlackjack: false, isDoubled: false, isStand: false },
     balance: INITIAL_BANKROLL,
     currentBet: 0,
+    lastBet: 0,
     phase: 'LOBBY',
     stats: { decisions: 0, correct: 0 },
+    insuranceBet: 0,
 });
 
 export const gameReducer = (state: GameState, action: GameAction): GameState => {
@@ -26,6 +28,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 currentBet: 0,
                 playerHands: [],
                 dealerHand: { cards: [], bet: 0, isActive: false, isBust: false, isBlackjack: false, isDoubled: false, isStand: false },
+                insuranceBet: 0,
             };
 
         case 'RESET_BANKROLL':
@@ -50,6 +53,21 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 balance: state.balance + state.currentBet,
                 currentBet: 0,
             };
+
+        case 'REBET_AND_DEAL': {
+            if (state.lastBet === 0 || state.balance < state.lastBet) return state;
+
+            // Trigger DEAL logic with lastBet
+            const betAmount = state.lastBet;
+            const newState = {
+                ...state,
+                balance: state.balance - betAmount,
+                currentBet: betAmount,
+            };
+            // Call DEAL logic (duplicated here for simplicity or we could dispatch DEAL next, but reducer must be pure)
+            // We'll just copy the DEAL logic below but use the new state
+            return gameReducer(newState, { type: 'DEAL' });
+        }
 
         case 'DEAL': {
             if (state.currentBet < MIN_BET) return state;
@@ -80,7 +98,31 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             const { total: pTotal } = calculateHandValue(playerHand);
             if (pTotal === 21) {
                 playerHand.isBlackjack = true;
-                playerHand.isStand = true; // Auto stand on BJ
+            }
+
+            // Check for Dealer Ace (Insurance)
+            let phase: Phase = 'PLAYER_TURN';
+            if (dCard1.rank === 'A') {
+                phase = 'INSURANCE';
+            } else if (calculateHandValue({ cards: [dCard1], bet: 0, isActive: false, isBust: false, isBlackjack: false, isDoubled: false, isStand: false }).total === 10) {
+                // Dealer shows 10, check for BJ immediately (Peek)
+                // If hidden card makes BJ
+                const dTotal = calculateHandValue({ cards: [dCard1, dCard2], bet: 0, isActive: false, isBust: false, isBlackjack: false, isDoubled: false, isStand: false }).total;
+                if (dTotal === 21) {
+                    // Dealer has BJ
+                    // Reveal immediately
+                    dealerHandCards[1].isHidden = false;
+                    phase = 'RESOLUTION';
+                    // Player BJ is handled in resolution
+                }
+            }
+
+            if (playerHand.isBlackjack && phase !== 'INSURANCE' && phase !== 'RESOLUTION') {
+                // Player has BJ and Dealer doesn't show Ace or 10 (or didn't peek yet)
+                // Actually if dealer shows 10 and no BJ, we go to player turn (or resolution if player has BJ)
+                // If player has BJ, they stand automatically.
+                playerHand.isStand = true;
+                phase = 'RESOLUTION';
             }
 
             return {
@@ -95,11 +137,65 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                     isBust: false,
                     isBlackjack: false,
                     isDoubled: false,
-                    isStand: false
+                    isStand: phase === 'RESOLUTION', // Dealer stands if round over
                 },
-                phase: playerHand.isBlackjack ? 'RESOLUTION' : 'PLAYER_TURN',
+                phase,
                 lastDecisionFeedback: undefined,
+                lastBet: state.currentBet, // Store for rebet
+                insuranceBet: 0,
             };
+        }
+
+        case 'TAKE_INSURANCE': {
+            const insuranceCost = state.currentBet / 2;
+            if (state.balance < insuranceCost) return state; // Should be handled in UI
+
+            let newState = {
+                ...state,
+                balance: state.balance - insuranceCost,
+                insuranceBet: insuranceCost,
+                phase: 'PLAYER_TURN' as Phase, // Default next phase
+            };
+
+            // Check Dealer BJ
+            const dHand = state.dealerHand;
+            const fullDHand = { ...dHand, cards: dHand.cards.map(c => ({ ...c, isHidden: false })) };
+            const { total } = calculateHandValue(fullDHand);
+
+            if (total === 21) {
+                // Dealer has BJ
+                // Pay insurance 2:1
+                newState.balance += insuranceCost * 3; // Return stake + winnings
+                newState.dealerHand = fullDHand; // Reveal
+                newState.phase = 'RESOLUTION';
+            } else {
+                // No BJ, lose insurance
+                // Check if player has BJ
+                if (state.playerHands[0].isBlackjack) {
+                    state.playerHands[0].isStand = true;
+                    newState.phase = 'RESOLUTION';
+                }
+            }
+            return newState;
+        }
+
+        case 'DECLINE_INSURANCE': {
+            let newState = { ...state, phase: 'PLAYER_TURN' as Phase };
+            // Check Dealer BJ
+            const dHand = state.dealerHand;
+            const fullDHand = { ...dHand, cards: dHand.cards.map(c => ({ ...c, isHidden: false })) };
+            const { total } = calculateHandValue(fullDHand);
+
+            if (total === 21) {
+                newState.dealerHand = fullDHand; // Reveal
+                newState.phase = 'RESOLUTION';
+            } else {
+                if (state.playerHands[0].isBlackjack) {
+                    state.playerHands[0].isStand = true;
+                    newState.phase = 'RESOLUTION';
+                }
+            }
+            return newState;
         }
 
         case 'PLAYER_ACTION': {
@@ -116,6 +212,25 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             );
 
             const isCorrect = playerAction === optimalAction;
+
+            // Handle Insufficient Funds for Double/Split
+            if ((playerAction === 'DOUBLE' || playerAction === 'SPLIT') && state.balance < activeHand.bet) {
+                // Just give feedback, don't execute
+                return {
+                    ...state,
+                    lastDecisionFeedback: {
+                        correct: isCorrect,
+                        userAction: playerAction,
+                        optimalAction,
+                    },
+                    // Stats update? Yes, user made a decision.
+                    stats: {
+                        decisions: state.stats.decisions + 1,
+                        correct: state.stats.correct + (isCorrect ? 1 : 0),
+                    }
+                };
+            }
+
             const newStats = {
                 decisions: state.stats.decisions + 1,
                 correct: state.stats.correct + (isCorrect ? 1 : 0),
@@ -287,6 +402,31 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 playerHands: [],
                 dealerHand: { cards: [], bet: 0, isActive: false, isBust: false, isBlackjack: false, isDoubled: false, isStand: false },
                 lastDecisionFeedback: undefined,
+                insuranceBet: 0,
+            };
+
+        case 'BACK_TO_LOBBY':
+            return {
+                ...state,
+                phase: 'LOBBY',
+                currentBet: 0,
+                playerHands: [],
+                dealerHand: { cards: [], bet: 0, isActive: false, isBust: false, isBlackjack: false, isDoubled: false, isStand: false },
+                lastDecisionFeedback: undefined,
+                insuranceBet: 0,
+            };
+
+        case 'RESTART_GAME':
+            return {
+                ...state,
+                phase: 'BETTING',
+                balance: INITIAL_BANKROLL,
+                currentBet: 0,
+                playerHands: [],
+                dealerHand: { cards: [], bet: 0, isActive: false, isBust: false, isBlackjack: false, isDoubled: false, isStand: false },
+                lastDecisionFeedback: undefined,
+                stats: { decisions: 0, correct: 0 },
+                insuranceBet: 0,
             };
 
         default:

@@ -5,7 +5,6 @@ import PlayerArea from './PlayerArea';
 import BettingControls from './BettingControls';
 import ActionButtons from './ActionButtons';
 import TrainerPanel from './TrainerPanel';
-import RoundSummaryModal from './RoundSummaryModal';
 import LobbyScreen from './LobbyScreen';
 import { calculateHandValue } from '../utils/hand';
 
@@ -60,8 +59,8 @@ const BlackjackTable: React.FC = () => {
     // Determine allowed actions
     const canHit = state.phase === 'PLAYER_TURN' && !!activeHand && !activeHand.isStand && !activeHand.isBust && !activeHand.isDoubled;
     const canStand = canHit;
-    const canDouble = canHit && activeHand.cards.length === 2 && state.balance >= activeHand.bet;
-    const canSplit = canHit && state.playerHands.length < 4 && activeHand.cards.length === 2 && activeHand.cards[0].rank === activeHand.cards[1].rank && state.balance >= activeHand.bet;
+    const canDouble = canHit && activeHand.cards.length === 2; // Can click even if no funds (for training)
+    const canSplit = canHit && state.playerHands.length < 4 && activeHand.cards.length === 2 && activeHand.cards[0].rank === activeHand.cards[1].rank; // Can click even if no funds
 
     return (
         <div className="min-h-screen bg-[#0f380f] flex flex-col items-center py-8 relative overflow-hidden">
@@ -74,10 +73,10 @@ const BlackjackTable: React.FC = () => {
                 <div className="flex flex-col items-end space-y-2">
                     <div className="text-white font-mono text-xl">Bankroll: <span className={state.balance < 20 ? 'text-red-400' : 'text-green-400'}>${state.balance}</span></div>
                     <div className="flex space-x-4">
-                        <button onClick={() => dispatch({ type: 'NEW_ROUND' })} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm font-bold transition-colors">
+                        <button onClick={() => dispatch({ type: 'RESTART_GAME' })} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm font-bold transition-colors">
                             Restart Game
                         </button>
-                        <button onClick={() => dispatch({ type: 'START_GAME' })} className="px-8 py-3 bg-red-800 hover:bg-red-700 text-white rounded-lg text-lg font-bold transition-colors shadow-md">
+                        <button onClick={() => dispatch({ type: 'BACK_TO_LOBBY' })} className="px-8 py-3 bg-red-800 hover:bg-red-700 text-white rounded-lg text-lg font-bold transition-colors shadow-md">
                             Back to Lobby
                         </button>
                     </div>
@@ -108,7 +107,44 @@ const BlackjackTable: React.FC = () => {
                         onBet={(amount) => dispatch({ type: 'PLACE_BET', amount })}
                         onClear={() => dispatch({ type: 'CLEAR_BET' })}
                         onDeal={() => dispatch({ type: 'DEAL' })}
+                        lastBet={state.lastBet}
+                        onRebet={() => dispatch({ type: 'REBET_AND_DEAL' })}
                     />
+                ) : state.phase === 'INSURANCE' ? (
+                    <div className="flex justify-center space-x-4 pb-8">
+                        <div className="text-white text-xl font-bold mr-4 flex items-center">Dealer shows Ace. Insurance?</div>
+                        <button
+                            onClick={() => dispatch({ type: 'TAKE_INSURANCE' })}
+                            className="px-6 py-3 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg font-bold shadow-lg"
+                        >
+                            Yes (${state.currentBet / 2})
+                        </button>
+                        <button
+                            onClick={() => dispatch({ type: 'DECLINE_INSURANCE' })}
+                            className="px-6 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-lg font-bold shadow-lg"
+                        >
+                            No
+                        </button>
+                    </div>
+                ) : state.phase === 'RESOLUTION' ? (
+                    <div className="flex justify-center pb-8">
+                        <div className="flex space-x-4">
+                            <button
+                                onClick={() => dispatch({ type: 'NEW_ROUND' })}
+                                className="px-8 py-3 bg-green-600 hover:bg-green-500 text-white text-xl font-bold rounded-lg shadow-lg animate-pulse"
+                            >
+                                New Round
+                            </button>
+                            {state.lastBet > 0 && state.balance >= state.lastBet && (
+                                <button
+                                    onClick={() => dispatch({ type: 'REBET_AND_DEAL' })}
+                                    className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white text-xl font-bold rounded-lg shadow-lg"
+                                >
+                                    Rebet & Deal (${state.lastBet})
+                                </button>
+                            )}
+                        </div>
+                    </div>
                 ) : (
                     <div className="flex justify-center pb-8">
                         <ActionButtons
@@ -121,11 +157,6 @@ const BlackjackTable: React.FC = () => {
                     </div>
                 )}
             </div>
-
-            <RoundSummaryModal
-                state={state}
-                onNextRound={() => dispatch({ type: 'NEW_ROUND' })}
-            />
         </div>
     );
 };
