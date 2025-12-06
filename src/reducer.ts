@@ -337,19 +337,27 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         }
 
         case 'NEXT_HAND': {
-            const currentIdx = state.activeHandIndex;
-            const currentHand = state.playerHands[currentIdx];
+            let nextIdx = state.activeHandIndex;
+            const currentHand = state.playerHands[nextIdx];
 
-            // If current hand is not done, stay
+            // If current hand is still active (not stand/bust/doubled-and-waiting?), stay.
+            // Actually double sets stand=true usually.
             if (!currentHand.isStand && !currentHand.isBust) return state;
 
-            // Move to next
-            if (currentIdx < state.playerHands.length - 1) {
-                return { ...state, activeHandIndex: currentIdx + 1, phase: 'PLAYER_TURN' };
-            } else {
-                // All hands done
-                return { ...state, phase: 'DEALER_TURN' };
+            // Move to next hand
+            nextIdx++;
+
+            // Skip over any hands that are already done (e.g. Split Aces that auto-stood)
+            while (nextIdx < state.playerHands.length) {
+                const hand = state.playerHands[nextIdx];
+                if (!hand.isStand && !hand.isBust) {
+                    return { ...state, activeHandIndex: nextIdx, phase: 'PLAYER_TURN' };
+                }
+                nextIdx++;
             }
+
+            // All hands done
+            return { ...state, phase: 'DEALER_TURN' };
         }
 
         case 'REVEAL_HIDDEN': {
