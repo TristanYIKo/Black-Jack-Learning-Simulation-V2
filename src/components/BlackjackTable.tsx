@@ -2,6 +2,7 @@ import React, { useReducer, useEffect } from 'react';
 import { gameReducer, createInitialState } from '../reducer';
 import DealerArea from './DealerArea';
 import PlayerArea from './PlayerArea';
+import TableDesign from './TableDesign';
 import BettingControls from './BettingControls';
 import ActionButtons from './ActionButtons';
 import TrainerPanel from './TrainerPanel';
@@ -80,6 +81,9 @@ const BlackjackTable: React.FC = () => {
             {/* Table Felt Texture/Gradient */}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-green-800 to-[#0f380f] opacity-50 pointer-events-none" />
 
+            {/* Table Graphics */}
+            <TableDesign />
+
             {/* Header / Stats */}
             <div className="z-10 w-full max-w-6xl flex justify-between items-start px-4 mb-4">
                 <div className="text-white/50 font-bold text-xl tracking-widest">BLACKJACK TRAINER</div>
@@ -103,9 +107,7 @@ const BlackjackTable: React.FC = () => {
                 <DealerArea hand={state.dealerHand} />
 
                 <div className="flex-1 flex items-center justify-center min-h-[300px]">
-                    {state.phase === 'BETTING' ? (
-                        <div className="text-white/30 text-2xl font-light italic">Place your bets to begin...</div>
-                    ) : (
+                    {state.phase !== 'BETTING' && (
                         <PlayerArea hands={state.playerHands} activeHandIndex={state.activeHandIndex} />
                     )}
                 </div>
