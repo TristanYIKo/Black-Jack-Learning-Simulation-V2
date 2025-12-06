@@ -382,32 +382,47 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
 
             const newHands = state.playerHands.map(hand => {
                 // Reveal any hidden cards (e.g. from Double Down)
-                let currentHand = hand;
+                let currentHand = { ...hand };
                 if (currentHand.cards.some(c => c.isHidden)) {
-                    currentHand = { ...currentHand, cards: currentHand.cards.map(c => ({ ...c, isHidden: false })) };
+                    currentHand.cards = currentHand.cards.map(c => ({ ...c, isHidden: false }));
                 }
 
-                // Already settled insurance
-                if (currentHand.isBust) return currentHand; // Lose bet (already deducted)
+                // Default to LOSS
+                currentHand.result = 'LOSS';
+                currentHand.payout = 0;
+
+                // Already settled insurance (busts already lost)
+                if (currentHand.isBust) return currentHand;
 
                 const { total: pTotal } = calculateHandValue(currentHand);
 
                 if (currentHand.isBlackjack) {
                     if (dealerHasBJ) {
-                        balance += currentHand.bet; // Push
+                        currentHand.result = 'PUSH';
+                        currentHand.payout = currentHand.bet;
+                        balance += currentHand.payout;
                     } else {
-                        balance += currentHand.bet + (currentHand.bet * 1.5); // 3:2
+                        currentHand.result = 'BLACKJACK';
+                        currentHand.payout = currentHand.bet + (currentHand.bet * 1.5);
+                        balance += currentHand.payout;
                     }
                 } else if (dBust) {
-                    balance += currentHand.bet * 2; // Win 1:1
+                    currentHand.result = 'WIN';
+                    currentHand.payout = currentHand.bet * 2;
+                    balance += currentHand.payout;
                 } else if (dealerHasBJ) {
-                    // Player not BJ (checked above), Player loses
+                    currentHand.result = 'DEALER_BLACKJACK';
+                    currentHand.payout = 0;
                 } else if (pTotal > dTotal) {
-                    balance += currentHand.bet * 2;
+                    currentHand.result = 'WIN';
+                    currentHand.payout = currentHand.bet * 2;
+                    balance += currentHand.payout;
                 } else if (pTotal === dTotal) {
-                    balance += currentHand.bet; // Push
+                    currentHand.result = 'PUSH';
+                    currentHand.payout = currentHand.bet;
+                    balance += currentHand.payout;
                 }
-                // else Player loses
+
                 return currentHand;
             });
 

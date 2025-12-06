@@ -17,6 +17,8 @@ export interface Hand {
     isBlackjack: boolean;
     isDoubled: boolean;
     isStand: boolean;
+    result?: 'WIN' | 'LOSS' | 'PUSH' | 'BLACKJACK' | 'DEALER_BLACKJACK';
+    payout?: number;
 }
 
 export type Phase = 'LOBBY' | 'BETTING' | 'DEALING' | 'INSURANCE' | 'PLAYER_TURN' | 'DEALER_TURN' | 'RESOLUTION';

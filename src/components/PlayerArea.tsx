@@ -2,6 +2,7 @@ import React from 'react';
 import { Hand } from '../types';
 import Card from './Card';
 import { calculateHandValue } from '../utils/hand';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface PlayerAreaProps {
     hands: Hand[];
@@ -37,14 +38,37 @@ const PlayerArea: React.FC<PlayerAreaProps> = ({ hands, activeHandIndex }) => {
                             : 'bg-black/20 border-2 border-transparent'
                             }`}
                     >
-                        {/* Hand Status Overlay */}
-                        {!hand.isActive && (hand.isBust || hand.isBlackjack || hand.isStand) && (
-                            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-20 whitespace-nowrap">
-                                <span className={`text-xl font-black px-3 py-1 rounded-full bg-black/80 border border-white/10 ${resultColor || 'text-white'}`}>
-                                    {resultText || total}
-                                </span>
-                            </div>
-                        )}
+                        {/* Result Popup - Overlay */}
+                        <AnimatePresence>
+                            {hand.result && hand.result !== 'LOSS' && (
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.5, y: 20 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.5 }}
+                                    className="absolute -top-32 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+                                >
+                                    <div className="bg-black/90 text-white px-6 py-4 rounded-xl border-2 border-yellow-500 shadow-2xl backdrop-blur-md">
+                                        <div className="text-lg font-bold text-center whitespace-nowrap">
+                                            {hand.result === 'BLACKJACK' && <span className="text-yellow-400 block text-2xl mb-1">Black Jack!</span>}
+                                            {hand.result === 'WIN' && <span className="text-green-400 block text-2xl mb-1">Win!</span>}
+                                            {hand.result === 'PUSH' && <span className="text-gray-300 block text-xl mb-1">Push</span>}
+                                            {hand.result === 'DEALER_BLACKJACK' && <span className="text-red-400 block text-lg leading-tight">Dealer has<br />Black Jack</span>}
+
+                                            {hand.payout !== undefined && hand.payout > 0 && (
+                                                <div className="text-yellow-300 font-mono text-xl">
+                                                    +${hand.payout}
+                                                </div>
+                                            )}
+                                            {hand.result === 'PUSH' && hand.payout !== undefined && (
+                                                <div className="text-gray-400 font-mono text-lg">
+                                                    ${hand.payout}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
                         <div className="flex -space-x-12 mb-4">
                             {hand.cards.map((card, i) => (
