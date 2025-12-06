@@ -317,8 +317,13 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 if (card1.rank === 'A') {
                     hand1.isStand = true;
                     hand2.isStand = true;
-                    // Move to dealer immediately after this update if both stand?
-                    // We'll let NEXT_HAND handle it.
+                } else {
+                    // Check for 21 on split hands (Auto-stand, not Blackjack)
+                    const { total: t1 } = calculateHandValue(hand1);
+                    if (t1 === 21) hand1.isStand = true;
+
+                    const { total: t2 } = calculateHandValue(hand2);
+                    if (t2 === 21) hand2.isStand = true;
                 }
 
                 return gameReducer({
@@ -326,7 +331,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                     shoe,
                     playerHands: newHands,
                     // Active index stays same (points to hand1), NEXT_HAND will move it if hand1 is done
-                }, { type: 'NEXT_HAND' }); // Check if hand1 is done (e.g. split aces)
+                }, { type: 'NEXT_HAND' }); // Check if hand1 is done (e.g. split aces or 21)
             }
 
             return {
