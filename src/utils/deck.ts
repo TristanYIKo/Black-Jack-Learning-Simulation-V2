@@ -24,6 +24,7 @@ export const createShoe = (numDecks: number = 6): Card[] => {
         for (const suit of SUITS) {
             for (const rank of RANKS) {
                 shoe.push({
+                    id: `${suit}-${rank}-${i}-${Math.random().toString(36).substr(2, 9)}`,
                     suit,
                     rank,
                     value: getRankValue(rank),

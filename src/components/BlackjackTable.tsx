@@ -117,7 +117,7 @@ const BlackjackTable: React.FC = () => {
                             onClick={() => dispatch({ type: 'TAKE_INSURANCE' })}
                             className="px-6 py-3 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg font-bold shadow-lg"
                         >
-                            Yes (${state.currentBet / 2})
+                            Yes (${state.playerHands[0].bet / 2})
                         </button>
                         <button
                             onClick={() => dispatch({ type: 'DECLINE_INSURANCE' })}

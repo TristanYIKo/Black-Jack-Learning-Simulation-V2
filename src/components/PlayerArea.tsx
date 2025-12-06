@@ -48,8 +48,8 @@ const PlayerArea: React.FC<PlayerAreaProps> = ({ hands, activeHandIndex }) => {
 
                         <div className="flex -space-x-12 mb-4">
                             {hand.cards.map((card, i) => (
-                                <div key={i} className="transform hover:-translate-y-4 transition-transform duration-200" style={{ zIndex: i }}>
-                                    <Card card={card} />
+                                <div key={card.id} className="transform hover:-translate-y-4 transition-transform duration-200" style={{ zIndex: i }}>
+                                    <Card card={card} delay={i > 1 ? 0 : i * 0.6} />
                                 </div>
                             ))}
                         </div>

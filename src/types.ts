@@ -2,6 +2,7 @@ export type Suit = 'hearts' | 'diamonds' | 'clubs' | 'spades';
 export type Rank = '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K' | 'A';
 
 export interface Card {
+    id: string;
     suit: Suit;
     rank: Rank;
     value: number; // 2-10, 10 for face cards, 11 for Ace (handled dynamically in calc)
