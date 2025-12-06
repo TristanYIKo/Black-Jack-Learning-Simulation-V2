@@ -118,7 +118,23 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 playerHand.isStand = true;
             }
 
-            // Check for Dealer Blackjack (if Ace showing, offer insurance first)
+            return {
+                ...state,
+                shoe,
+                playerHands: [playerHand],
+                dealerHand,
+                activeHandIndex: 0,
+                lastBet: state.currentBet,
+                currentBet: 0, // Bet is moved to hand
+                phase: 'DEALING',
+                lastDecisionFeedback: undefined,
+            };
+        }
+
+        case 'START_TURN': {
+            // Logic to transition from DEALING to actual phase
+            const playerHand = state.playerHands[0];
+            const dealerHand = state.dealerHand;
             const dealerUpCard = dealerHand.cards[1];
             const { total: dTotal } = calculateHandValue(dealerHand, true);
             const dealerHasBJ = dTotal === 21;
@@ -128,25 +144,12 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             if (dealerUpCard.rank === 'A') {
                 nextPhase = 'INSURANCE';
             } else if (dealerHasBJ) {
-                // Dealer has BJ (10 showing), skip player turn
                 nextPhase = 'DEALER_TURN';
             } else if (getBasicStrategyAction(playerHand, dealerUpCard) === 'STAND' && playerHand.isBlackjack) {
-                // Instant win check if dealer no Ace/10? Actually dealer checks peek.
-                // Simplified: If player BJ, we still wait for dealer turn to reveal.
                 nextPhase = 'DEALER_TURN';
             }
 
-            return {
-                ...state,
-                shoe,
-                playerHands: [playerHand],
-                dealerHand,
-                activeHandIndex: 0,
-                lastBet: state.currentBet,
-                currentBet: 0, // Bet is moved to hand
-                phase: nextPhase,
-                lastDecisionFeedback: undefined,
-            };
+            return { ...state, phase: nextPhase };
         }
 
         case 'REBET_AND_DEAL':

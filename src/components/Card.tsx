@@ -67,7 +67,7 @@ const Card: React.FC<CardProps> = ({ card, className = '', index = 0, delay }) =
                 className="w-full h-full relative"
                 initial={false}
                 animate={{ rotateY: card.isHidden ? 180 : 0 }}
-                transition={{ duration: 0.6 }}
+                transition={{ duration: 0.4 }}
                 style={{ transformStyle: 'preserve-3d' }}
             >
                 {/* FRONT FACE */}

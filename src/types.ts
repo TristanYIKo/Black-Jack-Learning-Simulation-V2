@@ -55,6 +55,7 @@ export type GameAction =
     | { type: 'CLEAR_BET' }
     | { type: 'DEAL' }
     | { type: 'REBET_AND_DEAL' }
+    | { type: 'START_TURN' }
     | { type: 'TAKE_INSURANCE' }
     | { type: 'DECLINE_INSURANCE' }
     | { type: 'PLAYER_ACTION'; action: ActionType }

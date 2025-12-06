@@ -11,6 +11,16 @@ import { calculateHandValue } from '../utils/hand';
 const BlackjackTable: React.FC = () => {
     const [state, dispatch] = useReducer(gameReducer, createInitialState());
 
+    // Effect to handle Deal Animation delay
+    useEffect(() => {
+        if (state.phase === 'DEALING') {
+            const timer = setTimeout(() => {
+                dispatch({ type: 'START_TURN' });
+            }, 1500); // Wait for dealing animations to finish
+            return () => clearTimeout(timer);
+        }
+    }, [state.phase]);
+
     // Effect to handle Dealer Turn with delays
     useEffect(() => {
         if (state.phase === 'DEALER_TURN') {
@@ -23,7 +33,7 @@ const BlackjackTable: React.FC = () => {
                 // Step 1: Reveal Hidden Card
                 timer = setTimeout(() => {
                     dispatch({ type: 'REVEAL_HIDDEN' });
-                }, 1000);
+                }, 600);
             } else {
                 // Step 2: Hit or Stand
                 const { total, isSoft } = calculateHandValue(dealerHand);
@@ -36,11 +46,11 @@ const BlackjackTable: React.FC = () => {
                 if (shouldHit) {
                     timer = setTimeout(() => {
                         dispatch({ type: 'DEALER_HIT' });
-                    }, 1500); // Slower speed
+                    }, 1000); // Faster speed
                 } else if (!dealerHand.isStand) {
                     timer = setTimeout(() => {
                         dispatch({ type: 'DEALER_STAND' });
-                    }, 1000);
+                    }, 800);
                 }
             }
             return () => clearTimeout(timer);
