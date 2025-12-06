@@ -120,7 +120,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
 
             // Check for Dealer Blackjack (if Ace showing, offer insurance first)
             const dealerUpCard = dealerHand.cards[1];
-            const { total: dTotal } = calculateHandValue(dealerHand);
+            const { total: dTotal } = calculateHandValue(dealerHand, true);
             const dealerHasBJ = dTotal === 21;
 
             let nextPhase: GameState['phase'] = 'PLAYER_TURN';
@@ -166,7 +166,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             const feedback = evaluateFeedback(state, 'INSURANCE_TAKE');
 
             // Check dealer BJ immediately
-            const { total: dTotal } = calculateHandValue(state.dealerHand);
+            const { total: dTotal } = calculateHandValue(state.dealerHand, true);
             const dealerHasBJ = dTotal === 21;
 
             let newState = {
@@ -198,7 +198,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
 
         case 'DECLINE_INSURANCE': {
             const feedback = evaluateFeedback(state, 'INSURANCE_DECLINE');
-            const { total: dTotal } = calculateHandValue(state.dealerHand);
+            const { total: dTotal } = calculateHandValue(state.dealerHand, true);
 
             let nextPhase: GameState['phase'] = 'PLAYER_TURN';
             if (dTotal === 21 || state.playerHands[0].isBlackjack) {
@@ -269,7 +269,9 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 currentHand.bet *= 2;
                 currentHand.isDoubled = true;
 
-                const res = dealCard(shoe, currentHand, true); // Deal hidden for double down
+                const { total: preDoubleTotal } = calculateHandValue(currentHand);
+                const dealHidden = preDoubleTotal <= 11; // Hide only if 11 or under. Show if > 11 (bust risk).
+                const res = dealCard(shoe, currentHand, dealHidden);
                 shoe = res.newShoe;
                 currentHand = res.newHand;
 
@@ -409,6 +411,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             return {
                 ...state,
                 balance,
+                playerHands: newHands,
                 phase: 'RESOLUTION',
             };
         }

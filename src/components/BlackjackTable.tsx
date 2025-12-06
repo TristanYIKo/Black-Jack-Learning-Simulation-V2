@@ -28,9 +28,10 @@ const BlackjackTable: React.FC = () => {
                 // Step 2: Hit or Stand
                 const { total, isSoft } = calculateHandValue(dealerHand);
                 const allBusted = state.playerHands.every(h => h.isBust);
+                const playerHasBlackjack = state.playerHands.some(h => h.isBlackjack);
 
-                // Dealer hits on soft 17, BUT NOT if all players busted
-                const shouldHit = !allBusted && (total < 17 || (total === 17 && isSoft));
+                // Dealer hits on soft 17, BUT NOT if all players busted OR player has Blackjack (auto-win)
+                const shouldHit = !allBusted && !playerHasBlackjack && (total < 17 || (total === 17 && isSoft));
 
                 if (shouldHit) {
                     timer = setTimeout(() => {

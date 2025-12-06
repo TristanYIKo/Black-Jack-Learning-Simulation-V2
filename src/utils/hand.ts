@@ -1,11 +1,11 @@
 import { Hand } from '../types';
 
-export const calculateHandValue = (hand: Hand): { total: number; isSoft: boolean; isBust: boolean } => {
+export const calculateHandValue = (hand: Hand, includeHidden: boolean = false): { total: number; isSoft: boolean; isBust: boolean } => {
     let total = 0;
     let aces = 0;
 
     for (const card of hand.cards) {
-        if (card.isHidden) continue; // Don't count hidden cards
+        if (card.isHidden && !includeHidden) continue; // Don't count hidden cards unless requested
         total += card.value;
         if (card.rank === 'A') {
             aces += 1;
