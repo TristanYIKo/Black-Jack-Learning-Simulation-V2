@@ -10,25 +10,83 @@ interface PlayerAreaProps {
 }
 
 const PlayerArea: React.FC<PlayerAreaProps> = ({ hands, activeHandIndex }) => {
+    const totalBet = hands.reduce((sum, h) => sum + h.bet, 0);
+    const totalPayout = hands.reduce((sum, h) => (h.payout || 0) + sum, 0);
+    const profit = totalPayout - totalBet;
+
+    // Determine round result
+    let roundResult: 'WIN' | 'LOSS' | 'PUSH' | 'BLACKJACK' | 'DEALER_BLACKJACK' | null = null;
+    let displayPayout = 0;
+
+    const allResolved = hands.every(h => h.result); // Ensure round is over
+
+    if (allResolved && hands.length > 0) {
+        if (hands.length === 1) {
+            // Single hand - preserve specific statuses
+            roundResult = hands[0].result || null;
+            displayPayout = hands[0].payout || 0;
+        } else {
+            // Split hands - aggregate
+            if (totalPayout > totalBet) {
+                roundResult = 'WIN';
+                displayPayout = totalPayout;
+            } else if (totalPayout === totalBet && totalBet > 0) {
+                roundResult = 'PUSH';
+                displayPayout = totalBet;
+            } else if (hands[0].result === 'DEALER_BLACKJACK') {
+                // Special case: if dealer detected BJ early, all hands lost immediately
+                roundResult = 'DEALER_BLACKJACK';
+            } else {
+                roundResult = 'LOSS';
+            }
+        }
+    }
+
     return (
-        <div className="flex justify-center items-end space-x-8">
+        <div className="relative flex justify-center items-end space-x-8">
+            {/* Result Popup - Centralized */}
+            <AnimatePresence>
+                {roundResult && roundResult !== 'LOSS' && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.5, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.5 }}
+                        className="absolute -top-40 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+                    >
+                        <div className="bg-black/90 text-white px-8 py-5 rounded-2xl border-2 border-yellow-500 shadow-2xl backdrop-blur-md">
+                            <div className="text-xl font-bold text-center whitespace-nowrap">
+                                {roundResult === 'BLACKJACK' && <span className="text-yellow-400 block text-3xl mb-1">Black Jack!</span>}
+                                {roundResult === 'WIN' && <span className="text-green-400 block text-3xl mb-1">Win!</span>}
+                                {roundResult === 'PUSH' && <span className="text-gray-300 block text-2xl mb-1">Push</span>}
+                                {roundResult === 'DEALER_BLACKJACK' && <span className="text-red-400 block text-xl leading-tight">Dealer has<br />Black Jack</span>}
+
+                                {displayPayout > 0 && roundResult === 'WIN' && (
+                                    <div className="text-yellow-300 font-mono text-2xl mt-1">
+                                        +${displayPayout - totalBet}
+                                        <span className="text-sm text-gray-400 block font-sans font-normal mt-1">(Total Payout: ${displayPayout})</span>
+                                    </div>
+                                )}
+                                {displayPayout > 0 && roundResult === 'BLACKJACK' && (
+                                    <div className="text-yellow-300 font-mono text-2xl mt-1">
+                                        +${displayPayout}
+                                    </div>
+                                )}
+                                {roundResult === 'PUSH' && displayPayout > 0 && (
+                                    <div className="text-gray-400 font-mono text-xl mt-1">
+                                        ${displayPayout} Returned
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {hands.map((hand, index) => {
                 const { total, isSoft } = calculateHandValue(hand);
 
-                // Determine result text
-                let resultText = '';
-                let resultColor = '';
-
-                if (hand.isBust) {
-                    resultText = 'BUST';
-                    resultColor = 'text-red-500';
-                } else if (hand.isBlackjack) {
-                    resultText = 'BLACKJACK!';
-                    resultColor = 'text-yellow-400';
-                } else if (hand.isStand && !hand.isActive) {
-                    // If round is over (resolution phase), we could show Win/Loss if we passed that info down
-                    // But for now, let's rely on the fact that if it's not active and not bust, we just show the score
-                }
+                // Determine result text (just for visual card border/stats if needed, or remove resultText logic if unused?)
+                // Keeping styling logic based on 'isActive'
 
                 return (
                     <div
@@ -38,38 +96,6 @@ const PlayerArea: React.FC<PlayerAreaProps> = ({ hands, activeHandIndex }) => {
                             : 'bg-black/20 border-2 border-transparent'
                             }`}
                     >
-                        {/* Result Popup - Overlay */}
-                        <AnimatePresence>
-                            {hand.result && hand.result !== 'LOSS' && (
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.5, y: 20 }}
-                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.5 }}
-                                    className="absolute -top-32 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
-                                >
-                                    <div className="bg-black/90 text-white px-6 py-4 rounded-xl border-2 border-yellow-500 shadow-2xl backdrop-blur-md">
-                                        <div className="text-lg font-bold text-center whitespace-nowrap">
-                                            {hand.result === 'BLACKJACK' && <span className="text-yellow-400 block text-2xl mb-1">Black Jack!</span>}
-                                            {hand.result === 'WIN' && <span className="text-green-400 block text-2xl mb-1">Win!</span>}
-                                            {hand.result === 'PUSH' && <span className="text-gray-300 block text-xl mb-1">Push</span>}
-                                            {hand.result === 'DEALER_BLACKJACK' && <span className="text-red-400 block text-lg leading-tight">Dealer has<br />Black Jack</span>}
-
-                                            {hand.payout !== undefined && hand.payout > 0 && (
-                                                <div className="text-yellow-300 font-mono text-xl">
-                                                    +${hand.payout}
-                                                </div>
-                                            )}
-                                            {hand.result === 'PUSH' && hand.payout !== undefined && (
-                                                <div className="text-gray-400 font-mono text-lg">
-                                                    ${hand.payout}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
                         <div className="flex -space-x-12 mb-4">
                             {hand.cards.map((card, i) => (
                                 <div key={card.id} className="transform hover:-translate-y-4 transition-transform duration-200" style={{ zIndex: i }}>

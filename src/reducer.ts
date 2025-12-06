@@ -52,7 +52,7 @@ const evaluateFeedback = (state: GameState, action: ActionType | 'INSURANCE_TAKE
         // Standard advice: Never take insurance.
         optimal = 'INSURANCE_DECLINE';
     } else {
-        const canSplit = state.playerHands.length < 4 && activeHand.cards.length === 2 && activeHand.cards[0].rank === activeHand.cards[1].rank;
+        const canSplit = state.playerHands.length < 4 && activeHand.cards.length === 2 && activeHand.cards[0].value === activeHand.cards[1].value;
         const canDouble = activeHand.cards.length === 2;
         optimal = getBasicStrategyAction(activeHand, dealerUpCard, canSplit, canDouble);
     }

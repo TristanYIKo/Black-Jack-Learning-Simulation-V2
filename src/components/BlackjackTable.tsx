@@ -72,8 +72,8 @@ const BlackjackTable: React.FC = () => {
     // Determine allowed actions
     const canHit = state.phase === 'PLAYER_TURN' && !!activeHand && !activeHand.isStand && !activeHand.isBust && !activeHand.isDoubled;
     const canStand = canHit;
-    const canDouble = canHit && activeHand.cards.length === 2; // Can click even if no funds (for training)
-    const canSplit = canHit && state.playerHands.length < 4 && activeHand.cards.length === 2 && activeHand.cards[0].rank === activeHand.cards[1].rank; // Can click even if no funds
+    const canDouble = canHit && activeHand.cards.length === 2 && state.balance >= activeHand.bet;
+    const canSplit = canHit && state.playerHands.length < 4 && activeHand.cards.length === 2 && activeHand.cards[0].value === activeHand.cards[1].value && state.balance >= activeHand.bet;
 
     return (
         <div className="min-h-screen bg-[#0f380f] flex flex-col items-center py-8 relative overflow-hidden">
