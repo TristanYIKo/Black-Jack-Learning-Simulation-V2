@@ -120,10 +120,16 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
 
             // Check for Dealer Blackjack (if Ace showing, offer insurance first)
             const dealerUpCard = dealerHand.cards[1];
+            const { total: dTotal } = calculateHandValue(dealerHand);
+            const dealerHasBJ = dTotal === 21;
+
             let nextPhase: GameState['phase'] = 'PLAYER_TURN';
 
             if (dealerUpCard.rank === 'A') {
                 nextPhase = 'INSURANCE';
+            } else if (dealerHasBJ) {
+                // Dealer has BJ (10 showing), skip player turn
+                nextPhase = 'DEALER_TURN';
             } else if (getBasicStrategyAction(playerHand, dealerUpCard) === 'STAND' && playerHand.isBlackjack) {
                 // Instant win check if dealer no Ace/10? Actually dealer checks peek.
                 // Simplified: If player BJ, we still wait for dealer turn to reveal.
@@ -263,7 +269,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 currentHand.bet *= 2;
                 currentHand.isDoubled = true;
 
-                const res = dealCard(shoe, currentHand);
+                const res = dealCard(shoe, currentHand, true); // Deal hidden for double down
                 shoe = res.newShoe;
                 currentHand = res.newHand;
 
@@ -370,28 +376,34 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             const dealerHasBJ = state.dealerHand.cards.length === 2 && dTotal === 21;
 
             const newHands = state.playerHands.map(hand => {
+                // Reveal any hidden cards (e.g. from Double Down)
+                let currentHand = hand;
+                if (currentHand.cards.some(c => c.isHidden)) {
+                    currentHand = { ...currentHand, cards: currentHand.cards.map(c => ({ ...c, isHidden: false })) };
+                }
+
                 // Already settled insurance
-                if (hand.isBust) return hand; // Lose bet (already deducted)
+                if (currentHand.isBust) return currentHand; // Lose bet (already deducted)
 
-                const { total: pTotal } = calculateHandValue(hand);
+                const { total: pTotal } = calculateHandValue(currentHand);
 
-                if (hand.isBlackjack) {
+                if (currentHand.isBlackjack) {
                     if (dealerHasBJ) {
-                        balance += hand.bet; // Push
+                        balance += currentHand.bet; // Push
                     } else {
-                        balance += hand.bet + (hand.bet * 1.5); // 3:2
+                        balance += currentHand.bet + (currentHand.bet * 1.5); // 3:2
                     }
                 } else if (dBust) {
-                    balance += hand.bet * 2; // Win 1:1
+                    balance += currentHand.bet * 2; // Win 1:1
                 } else if (dealerHasBJ) {
                     // Player not BJ (checked above), Player loses
                 } else if (pTotal > dTotal) {
-                    balance += hand.bet * 2;
+                    balance += currentHand.bet * 2;
                 } else if (pTotal === dTotal) {
-                    balance += hand.bet; // Push
+                    balance += currentHand.bet; // Push
                 }
                 // else Player loses
-                return hand;
+                return currentHand;
             });
 
             return {
